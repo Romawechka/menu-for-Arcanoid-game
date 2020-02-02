@@ -2,6 +2,7 @@ import pygame
 import Image_creator
 
 
+
 def settings(write=False):
     width_height = list()
     # print(write)
@@ -43,16 +44,12 @@ def display_create(args):
     Image_creator.resize_image(background, background, (display_width, display_height))
     new_background = pygame.image.load(background)
 
-
     if write:
         settings(True)
-
-
 
     display = pygame.display.set_mode((display_width, display_height))
     display.fill((255, 255, 255))
     display.blit(new_background, (0, 0))
-
 
 
 class Text:
@@ -66,13 +63,37 @@ class Text:
 
 
 class Button(Text):
-    def __init__(self, width, height, inactive_color, active_color, display):
+    def __init__(self, display, width=240, height=84, tratransform=True,
+                 args_inactive=[1978, 900, 1031, 262], args_active=[1978, 1187, 1031, 262]):
+        self.button = pygame.sprite.Sprite()
+        self.display = display
         self.width = width
         self.height = height
-        self.inactive_color = inactive_color
-        self.active_color = active_color
-        self.button_sound = pygame.mixer.Sound("sounds\click_sound.WAV")
-        self.display = display
+        self.button_click_sound = "sounds\click_sound.WAV"
+        self.button_sound = "sounds\\button.WAV"
+        self.button_inactive_image = 'resourse\\buttons.png'
+        self.button_active_image = 'resourse\\buttons.png'
+        self.triger1 = True
+        self.triger2 = not self.triger1
+
+        self._button_sound = pygame.mixer.Sound(self.button_sound)
+        self._button_click_sound = pygame.mixer.Sound(self.button_click_sound)
+        self._button_inactive_image = pygame.image.load(self.button_inactive_image)
+        self._button_active_image = pygame.image.load(self.button_active_image)
+
+        if tratransform:
+            self._button_inactive_image = self._button_inactive_image.subsurface(args_inactive)
+            self._button_inactive_image = pygame.transform.scale(self._button_inactive_image,
+                                                                 (width, height))
+
+            self._button_active_image = self._button_active_image.subsurface(args_active)
+            self._button_active_image = pygame.transform.scale(self._button_active_image, (width, height))
+
+        self.button.image = self._button_inactive_image
+
+    def _draw(self, image, x, y):
+        self.button.image = image
+        self.display.blit(self.button.image, (x, y))
 
     def draw_button(self, x, y, message='', action=None, args=None, size=30):
         mouse_cursor = pygame.mouse.get_pos()
@@ -80,10 +101,14 @@ class Button(Text):
 
         if (x <= mouse_cursor[0]) and (x + self.width >= mouse_cursor[0]):
             if (y <= mouse_cursor[1]) and (y + self.height >= mouse_cursor[1]):
-                pygame.draw.rect(self.display, self.active_color, (x, y, self.width, self.height))
+                self._draw(self._button_active_image, x, y)
+                self.print_text(message, x + 10, y + 10, font_size=size)
+                if self.triger1 != self.triger2:
+                    pygame.mixer.Sound.play(self._button_sound)
+                    self.triger2 = self.triger1
 
                 if click[0] == 1:
-                    pygame.mixer.Sound.play(self.button_sound)
+                    pygame.mixer.Sound.play(self._button_click_sound)
                     pygame.time.delay(100)
 
                     if action is not None:
@@ -92,7 +117,12 @@ class Button(Text):
                         else:
                             action()
             else:
-                pygame.draw.rect(self.display, self.inactive_color, (x, y, self.width, self.height))
+                self._draw(self._button_inactive_image, x, y)
+                self.print_text(message, x + 10, y + 10, font_size=size)
+                self.triger2 = not self.triger1
         else:
-            pygame.draw.rect(self.display, self.inactive_color, (x, y, self.width, self.height))
-        self.print_text(message, x + 10, y + 10, font_size=size)
+            self._draw(self._button_inactive_image, x, y)
+            self.print_text(message, x + 10, y + 10, font_size=size)
+            self.triger2 = not self.triger1
+
+
